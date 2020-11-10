@@ -47,57 +47,99 @@ function getResponse() {
 
 function useResponse(r) {
   console.log(r);
+  $("#formative-title").html(r.data.formative.title);
   if (r.errors != undefined) {
-    document.write(
-      "<h1>Error connecting. Check that the information you entered is correct.</h1>"
+    $("#cardiv").html(
+      "<p>Error connecting. Check that the information you entered is correct.</p>"
     );
   } else {
     var ans = r.data.answers;
     console.log(ans);
     if (ans.length == 0) {
-      document.write(
-        "<h1>No answers available. Check that the formative is open, or open the console for more information.</h1>"
+      $("#cardiv").html(
+        "<p>No answers available. Check that the formative is open, or open the console for more information.</p>"
       );
     }
     for (var i = 0; i < ans.length; i++) {
       var a = ans[i];
-      var answerType = "Answer";
       var answer = a.content.answer;
       var id = a._id;
-      if (a.type === "multipleChoice") {
-        answerType = "Answer ID";
+      var qType = a.type;
+      if (qType === "multipleChoice") {
+        qType = "Multiple Choice";
         answer = getMC(answer, id, r);
+      } else if (qType === "numeric") {
+        qType = "Numeric";
+      } else if (qType === "shortAnswer") {
+        qType = "Short Answer";
+      } else if (qType === "multipleSelection") {
+        qType = "Multiple Selection";
       }
-      document.write(
-        '<div class="card"><h1>Type: ' +
-          a.type +
-          '</h1><p class="text-muted">Question ID: ' +
-          id +
-          "</p><p>" +
-          answerType +
-          ": " +
-          answer +
-          "</p></div>"
-      );
+      var question = getQ(id, r);
+      if (question.indexOf(":") != -1) {
+        question = question.substring(question.indexOf(":") + 1);
+      }
+      if (
+        question.indexOf('"text":"') != -1 &&
+        question.indexOf(',"type":"') != -1
+      ) {
+        question = question.substring(
+          question.indexOf('"text":"') + '"text":"'.length,
+          question.indexOf(',"type":"') - 1
+        );
+      }
+      var htmlToAdd =
+        '<div class="media text-muted pt-3"><svg class="bd-placeholder-img mr-2 rounded" width="32" height="32" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: 32x32"><title>Placeholder</title><rect width="100%" height="100%" fill="#007bff"></rect><text x="50%" y="50%" fill="#007bff" dy=".3em">32x32</text></svg><div class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray"><div class="d-flex justify-content-between align-items-center w-100"><strong class="text-gray-dark">' +
+        qType +
+        '</strong></div><span class="d-block">Question: ' +
+        question +
+        '</span><span class="d-block">Answer: ' +
+        answer +
+        "</span></div></div>";
+      $("#cardiv").html($("#cardiv").html() + htmlToAdd);
     }
   }
 }
 
 function getMC(answer, id, r) {
-    var toReturn = answer;
-    //Looking for the label for this MC answer for the question with this ID in the data r.
-    var qs = r.data.formative.items;
-    for (var i = 0; i < qs.length; i++) {
-        if (qs[i]._id === id) {
-            if (indexOf(answer, qs[i].choices) != -1) {
-                toReturn = qs[i].choiceLabels[indexOf(answer, qs[i].choices)];
-            }
-            break;
-        }
+  if (id.indexOf("-") != -1) {
+    id = id.substring(0, id.indexOf("-"));
+  }
+  answer = answer[0];
+  console.log("getMC()");
+  console.log(id);
+  console.log(answer);
+  var toReturn = answer;
+  //Looking for the label for this MC answer for the question with this ID in the data r.
+  var qs = r.data.formative.items;
+  for (var i = 0; i < qs.length; i++) {
+    if (qs[i]._id === id) {
+      console.log("Found question with ID: " + id);
+      console.log(qs[i]);
+      if (qs[i].details.choices.indexOf(answer) != -1) {
+        toReturn = qs[i].details.choiceLabels[qs[i].details.choices.indexOf(answer)];
+      }
+      break;
     }
-return toReturn;
+  }
+  return toReturn;
 }
 
+function getQ(id, r) {
+  if (id.indexOf("-") != -1) {
+    id = id.substring(0, id.indexOf("-"));
+  }
+  var toReturn = "Unknown";
+  //Looking for the label for this MC answer for the question with this ID in the data r.
+  var qs = r.data.formative.items;
+  for (var i = 0; i < qs.length; i++) {
+    if (qs[i]._id === id) {
+      toReturn = qs[i].text;
+      break;
+    }
+  }
+  return toReturn;
+}
 
 function getStrings() {
   if (
