@@ -3,3 +3,6 @@ A simple and very limited web interface that fetches questions and answers from 
 
 
 To use it, you need your user ID, the ID of the formative, and your bearer token.
+
+
+Test it out: https://kaedenbrinkman.github.io/goformative
